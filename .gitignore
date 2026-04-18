@@ -1,0 +1,20 @@
+# Build artifacts
+**/obj/
+**/bin/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Logs / temp
+*.log
+*.tmp
+
+# Debug symbols
+*.pdb
+
+# OS files
+.DS_Store
+Thumbs.db

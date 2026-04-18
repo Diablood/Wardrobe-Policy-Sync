@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <WPS_ApplyPolicy>Appliquer une règle vestimentaire</WPS_ApplyPolicy>
+    <WPS_ApplyPolicyDesc>Configure ce porte-vêtement à partir d'une règle vestimentaire vanilla.</WPS_ApplyPolicyDesc>
+
+    <WPS_ClearPolicy>Effacer la règle</WPS_ClearPolicy>
+    <WPS_ClearPolicyDesc>Retire la règle vestimentaire mémorisée de ce porte-vêtement.</WPS_ClearPolicyDesc>
+
+    <WPS_ReapplyPolicy>Réappliquer la règle</WPS_ReapplyPolicy>
+    <WPS_ReapplyPolicyDesc>Recharge la règle vestimentaire vanilla actuelle et l'applique à nouveau à ce porte-vêtement.</WPS_ReapplyPolicyDesc>
+
+    <WPS_PolicyApplied>Règle appliquée : {0}</WPS_PolicyApplied>
+    <WPS_PolicyCleared>Règle effacée.</WPS_PolicyCleared>
+    <WPS_PolicyReapplied>Règle réappliquée : {0}</WPS_PolicyReapplied>
+    <WPS_PolicyStoredButNotApplied>Règle mémorisée mais impossible à appliquer au filtre du porte-vêtement : {0}</WPS_PolicyStoredButNotApplied>
+
+    <WPS_NoPolicies>Aucune règle vestimentaire disponible.</WPS_NoPolicies>
+    <WPS_CurrentPolicy>Règle : {0}</WPS_CurrentPolicy>
+</LanguageData>

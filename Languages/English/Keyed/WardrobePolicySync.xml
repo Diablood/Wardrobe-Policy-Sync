@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <WPS_ApplyPolicy>Apply apparel policy</WPS_ApplyPolicy>
+    <WPS_ApplyPolicyDesc>Configure this wardrobe using a vanilla apparel policy.</WPS_ApplyPolicyDesc>
+
+    <WPS_ClearPolicy>Clear policy</WPS_ClearPolicy>
+    <WPS_ClearPolicyDesc>Remove the stored apparel policy from this wardrobe.</WPS_ClearPolicyDesc>
+
+    <WPS_ReapplyPolicy>Reapply policy</WPS_ReapplyPolicy>
+    <WPS_ReapplyPolicyDesc>Reload the current vanilla apparel policy and apply it again to this wardrobe.</WPS_ReapplyPolicyDesc>
+
+    <WPS_PolicyApplied>Policy applied: {0}</WPS_PolicyApplied>
+    <WPS_PolicyCleared>Policy cleared.</WPS_PolicyCleared>
+    <WPS_PolicyReapplied>Policy reapplied: {0}</WPS_PolicyReapplied>
+    <WPS_PolicyStoredButNotApplied>Policy stored but could not be applied to the wardrobe filter: {0}</WPS_PolicyStoredButNotApplied>
+
+    <WPS_NoPolicies>No apparel policies available.</WPS_NoPolicies>
+    <WPS_CurrentPolicy>Policy: {0}</WPS_CurrentPolicy>
+</LanguageData>
