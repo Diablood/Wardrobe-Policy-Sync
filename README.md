@@ -2,53 +2,49 @@
 
 **RimWorld 1.6 – Odyssey DLC**
 
-Automatically configure Odyssey outfit stands using vanilla apparel policies.
+Sync Odyssey outfit stands with vanilla apparel policies.
 
 ---
 
 ## ✨ Features
 
-* Apply any vanilla **Apparel Policy** directly to an outfit stand
-* Automatically syncs on game load
-* Applies:
-
-  * Allowed apparel
-  * Quality settings
-  * Hit points (durability)
-* Manual controls:
-
+* Apply any vanilla apparel policy directly to an outfit stand
+* Copies allowed apparel automatically
+* Copies quality settings
+* Copies durability (hit points) settings
+* Manual actions:
   * Apply policy
   * Reapply policy
   * Clear policy
+* Automatic re-sync on game load
+* Supports adult and kid outfit stands
 
 ---
 
 ## 🧠 How it works
 
-Instead of manually configuring each outfit stand:
+Instead of manually configuring outfit stands:
 
 1. Select an outfit stand
-2. Click **"Apply apparel policy"**
+2. Click **Apply apparel policy**
 3. Choose an existing vanilla policy
 
-👉 The stand will now follow that policy automatically.
+The stand will now follow that policy automatically.
 
 ---
 
 ## 🔄 Auto Sync
 
-When loading a save:
-
-* The assigned policy is re-applied automatically
-* Keeps your wardrobe consistent with your colony rules
+* Policies are automatically re-applied when loading a save
+* Keeps racks consistent with your colony rules
 
 ---
 
 ## ⚠️ Notes
 
-* If a policy is renamed, it may not be found again (based on label matching)
-* Only affects **Odyssey outfit stands**
-* Does not modify pawn behavior directly
+* Policy matching is based on the policy name
+* Renaming a policy may require reassigning it
+* Does not modify pawn behavior
 
 ---
 
@@ -56,22 +52,14 @@ When loading a save:
 
 * RimWorld 1.6
 * Odyssey DLC
-* Harmony (auto-loaded dependency)
+* Harmony
 
 ---
 
 ## 🌍 Languages
 
-* English (default)
-* French (included)
-
----
-
-## 🛠️ Development
-
-This mod is open source.
-
-Feel free to contribute or suggest improvements.
+* English
+* French
 
 ---
 
