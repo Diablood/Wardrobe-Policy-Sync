@@ -7,6 +7,7 @@ using Verse;
 
 namespace WardrobePolicySync
 {
+    [StaticConstructorOnStartup]
     public static class WPS_Icons
     {
         public static readonly Texture2D Apply =
@@ -407,21 +408,31 @@ namespace WardrobePolicySync
         }
     }
 
-    [HarmonyPatch(typeof(Building_OutfitStand), "ExposeData")]
-    public static class Patch_Building_OutfitStand_ExposeData
+    [HarmonyPatch(typeof(Thing), "ExposeData")]
+    public static class Patch_Thing_ExposeData
     {
-        public static void Postfix(Building_OutfitStand __instance)
+        public static void Postfix(Thing __instance)
         {
-            Patch_WardrobePolicyPersistence.ExposeThingData(__instance);
+            if (__instance is Building building &&
+                (building.def.defName == "Building_OutfitStand" ||
+                building.def.defName == "Building_KidOutfitStand"))
+            {
+                Patch_WardrobePolicyPersistence.ExposeThingData(__instance);
+            }
         }
     }
 
-    [HarmonyPatch(typeof(Building_KidOutfitStand), "ExposeData")]
-    public static class Patch_Building_KidOutfitStand_ExposeData
+    [HarmonyPatch(typeof(Thing), "SpawnSetup")]
+    public static class Patch_Thing_SpawnSetup
     {
-        public static void Postfix(Building_KidOutfitStand __instance)
+        public static void Postfix(Thing __instance)
         {
-            Patch_WardrobePolicyPersistence.ExposeThingData(__instance);
+            if (__instance is Building building &&
+                (building.def.defName == "Building_OutfitStand" ||
+                building.def.defName == "Building_KidOutfitStand"))
+            {
+                Patch_AutoSyncHelper.TryAutoSync(building);
+            }
         }
     }
 
@@ -450,24 +461,6 @@ namespace WardrobePolicySync
 
             if (data.allowedApparelDefNames == null)
                 data.allowedApparelDefNames = new List<string>();
-        }
-    }
-
-    [HarmonyPatch(typeof(Building_OutfitStand), "SpawnSetup")]
-    public static class Patch_OutfitStand_SpawnSetup
-    {
-        public static void Postfix(Building_OutfitStand __instance)
-        {
-            Patch_AutoSyncHelper.TryAutoSync(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(Building_KidOutfitStand), "SpawnSetup")]
-    public static class Patch_KidOutfitStand_SpawnSetup
-    {
-        public static void Postfix(Building_KidOutfitStand __instance)
-        {
-            Patch_AutoSyncHelper.TryAutoSync(__instance);
         }
     }
 
