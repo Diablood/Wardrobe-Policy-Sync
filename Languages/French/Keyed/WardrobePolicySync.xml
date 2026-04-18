@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-    <WPS_ApplyPolicy>Appliquer une règle vestimentaire</WPS_ApplyPolicy>
+    <WPS_ApplyPolicy>Appliquer une règle</WPS_ApplyPolicy>
     <WPS_ApplyPolicyDesc>Configure ce porte-vêtement à partir d'une règle vestimentaire vanilla.</WPS_ApplyPolicyDesc>
 
     <WPS_ClearPolicy>Effacer la règle</WPS_ClearPolicy>

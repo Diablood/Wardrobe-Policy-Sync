@@ -2,10 +2,23 @@ using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 using RimWorld;
+using UnityEngine;
 using Verse;
 
 namespace WardrobePolicySync
 {
+    public static class WPS_Icons
+    {
+        public static readonly Texture2D Apply =
+            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ApplyPolicy");
+
+        public static readonly Texture2D Clear =
+            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ClearPolicy");
+
+        public static readonly Texture2D Reapply =
+            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ReapplyPolicy");
+    }
+
     [HarmonyPatch(typeof(Building), "GetGizmos")]
     public static class Patch_Building_GetGizmos
     {
@@ -19,6 +32,7 @@ namespace WardrobePolicySync
                 data = new WardrobePolicyData();
                 dataStore[t] = data;
             }
+
             return data;
         }
 
@@ -27,71 +41,74 @@ namespace WardrobePolicySync
             foreach (var g in __result)
                 yield return g;
 
-            if (IsTargetRack(__instance))
-            {
-                var data = GetData(__instance);
+            if (!IsTargetRack(__instance))
+                yield break;
 
+            var data = GetData(__instance);
+
+            yield return new Command_Action
+            {
+                defaultLabel = "WPS_ApplyPolicy".Translate(),
+                defaultDesc = "WPS_ApplyPolicyDesc".Translate(),
+                icon = WPS_Icons.Apply,
+                action = delegate
+                {
+                    OpenPolicyMenu(__instance);
+                }
+            };
+
+            if (!string.IsNullOrEmpty(data.selectedPolicyLabel))
+            {
                 yield return new Command_Action
                 {
-                    defaultLabel = "WPS_ApplyPolicy".Translate(),
-                    defaultDesc = "WPS_ApplyPolicyDesc".Translate(),
+                    defaultLabel = "WPS_ClearPolicy".Translate(),
+                    defaultDesc = "WPS_ClearPolicyDesc".Translate(),
+                    icon = WPS_Icons.Clear,
                     action = delegate
                     {
-                        OpenPolicyMenu(__instance);
+                        data.selectedPolicyLabel = null;
+                        data.allowedApparelDefNames.Clear();
+                        data.qualityRange = QualityRange.All;
+                        data.hpRange = new FloatRange(0f, 1f);
+
+                        TryApplyPolicyToRack(__instance, data);
+
+                        Messages.Message(
+                            "WPS_PolicyCleared".Translate(),
+                            MessageTypeDefOf.TaskCompletion
+                        );
                     }
                 };
 
-                if (!string.IsNullOrEmpty(data.selectedPolicyLabel))
+                yield return new Command_Action
                 {
-                    yield return new Command_Action
+                    defaultLabel = "WPS_ReapplyPolicy".Translate(),
+                    defaultDesc = "WPS_ReapplyPolicyDesc".Translate(),
+                    icon = WPS_Icons.Reapply,
+                    action = delegate
                     {
-                        defaultLabel = "WPS_ClearPolicy".Translate(),
-                        defaultDesc = "WPS_ClearPolicyDesc".Translate(),
-                        action = delegate
+                        bool refreshed = RefreshDataFromPolicyLabel(data);
+                        bool applied = false;
+
+                        if (refreshed)
+                            applied = TryApplyPolicyToRack(__instance, data);
+
+                        if (refreshed && applied)
                         {
-                            data.selectedPolicyLabel = null;
-                            data.allowedApparelDefNames.Clear();
-                            data.qualityRange = QualityRange.All;
-                            data.hpRange = new FloatRange(0f, 1f);
-
-                            TryApplyPolicyToRack(__instance, data);
-
                             Messages.Message(
-                                "WPS_PolicyCleared".Translate(),
+                                "WPS_PolicyReapplied".Translate(data.selectedPolicyLabel),
                                 MessageTypeDefOf.TaskCompletion
                             );
                         }
-                    };
-
-                    yield return new Command_Action
-                    {
-                        defaultLabel = "WPS_ReapplyPolicy".Translate(),
-                        defaultDesc = "WPS_ReapplyPolicyDesc".Translate(),
-                        action = delegate
+                        else
                         {
-                            bool refreshed = RefreshDataFromPolicyLabel(data);
-                            bool applied = false;
-
-                            if (refreshed)
-                                applied = TryApplyPolicyToRack(__instance, data);
-
-                            if (refreshed && applied)
-                            {
-                                Messages.Message(
-                                    "WPS_PolicyReapplied".Translate(data.selectedPolicyLabel),
-                                    MessageTypeDefOf.TaskCompletion
-                                );
-                            }
-                            else
-                            {
-                                Messages.Message(
-                                    "WPS_PolicyStoredButNotApplied".Translate(data.selectedPolicyLabel ?? "Unknown"),
-                                    MessageTypeDefOf.CautionInput
-                                );
-                            }
+                            Messages.Message(
+                                "WPS_PolicyStoredButNotApplied".Translate(data.selectedPolicyLabel ?? "Unknown"),
+                                MessageTypeDefOf.CautionInput
+                            );
                         }
-                    };
-                }
+                    }
+                };
             }
         }
 
