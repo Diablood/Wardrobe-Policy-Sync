@@ -69,6 +69,7 @@ namespace WardrobePolicySync
                     {
                         data.selectedPolicyLabel = null;
                         data.allowedApparelDefNames.Clear();
+                        data.allowedSpecialFilterDefNames.Clear();
                         data.qualityRange = QualityRange.All;
                         data.hpRange = new FloatRange(0f, 1f);
 
@@ -142,7 +143,9 @@ namespace WardrobePolicySync
 
                     QualityRange q;
                     FloatRange hp;
+
                     data.allowedApparelDefNames = ExtractAllowedApparel(localPolicy, out q, out hp);
+                    data.allowedSpecialFilterDefNames = ExtractAllowedSpecialFilters(localPolicy);
                     data.qualityRange = q;
                     data.hpRange = hp;
 
@@ -204,6 +207,33 @@ namespace WardrobePolicySync
             return result;
         }
 
+        private static List<string> ExtractAllowedSpecialFilters(ApparelPolicy policy)
+        {
+            List<string> result = new List<string>();
+
+            if (policy == null || policy.filter == null)
+                return result;
+
+            foreach (SpecialThingFilterDef specialDef in DefDatabase<SpecialThingFilterDef>.AllDefsListForReading)
+            {
+                bool allowed = false;
+
+                try
+                {
+                    allowed = policy.filter.Allows(specialDef);
+                }
+                catch
+                {
+                    allowed = false;
+                }
+
+                if (allowed)
+                    result.Add(specialDef.defName);
+            }
+
+            return result;
+        }
+
         private static bool RefreshDataFromPolicyLabel(WardrobePolicyData data)
         {
             if (data == null || string.IsNullOrEmpty(data.selectedPolicyLabel))
@@ -231,6 +261,7 @@ namespace WardrobePolicySync
             FloatRange hp;
 
             data.allowedApparelDefNames = ExtractAllowedApparel(matchedPolicy, out q, out hp);
+            data.allowedSpecialFilterDefNames = ExtractAllowedSpecialFilters(matchedPolicy);
             data.qualityRange = q;
             data.hpRange = hp;
 
@@ -264,6 +295,19 @@ namespace WardrobePolicySync
                 try
                 {
                     filter.SetAllow(def, allow);
+                }
+                catch
+                {
+                }
+            }
+
+            foreach (SpecialThingFilterDef specialDef in DefDatabase<SpecialThingFilterDef>.AllDefsListForReading)
+            {
+                bool allow = data.allowedSpecialFilterDefNames.Contains(specialDef.defName);
+
+                try
+                {
+                    filter.SetAllow(specialDef, allow);
                 }
                 catch
                 {
@@ -415,7 +459,7 @@ namespace WardrobePolicySync
         {
             if (__instance is Building building &&
                 (building.def.defName == "Building_OutfitStand" ||
-                building.def.defName == "Building_KidOutfitStand"))
+                 building.def.defName == "Building_KidOutfitStand"))
             {
                 Patch_WardrobePolicyPersistence.ExposeThingData(__instance);
             }
@@ -429,7 +473,7 @@ namespace WardrobePolicySync
         {
             if (__instance is Building building &&
                 (building.def.defName == "Building_OutfitStand" ||
-                building.def.defName == "Building_KidOutfitStand"))
+                 building.def.defName == "Building_KidOutfitStand"))
             {
                 Patch_AutoSyncHelper.TryAutoSync(building);
             }
@@ -455,12 +499,18 @@ namespace WardrobePolicySync
             }
 
             Scribe_Values.Look(ref data.selectedPolicyLabel, "wps_selectedPolicyLabel");
+
             Scribe_Collections.Look(ref data.allowedApparelDefNames, "wps_allowedApparelDefNames", LookMode.Value);
+            Scribe_Collections.Look(ref data.allowedSpecialFilterDefNames, "wps_allowedSpecialFilterDefNames", LookMode.Value);
+
             Scribe_Values.Look(ref data.qualityRange, "wps_qualityRange");
             Scribe_Values.Look(ref data.hpRange, "wps_hpRange");
 
             if (data.allowedApparelDefNames == null)
                 data.allowedApparelDefNames = new List<string>();
+
+            if (data.allowedSpecialFilterDefNames == null)
+                data.allowedSpecialFilterDefNames = new List<string>();
         }
     }
 
