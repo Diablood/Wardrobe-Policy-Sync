@@ -255,7 +255,10 @@ namespace WardrobePolicySync
             }
 
             if (matchedPolicy == null)
+            {
+                WPS_Log.Warning("WPS_LogPolicyNotFound".Translate(data.selectedPolicyLabel));
                 return false;
+            }
 
             QualityRange q;
             FloatRange hp;
@@ -275,7 +278,10 @@ namespace WardrobePolicySync
 
             ThingFilter filter = TryGetStorageFilter(building);
             if (filter == null)
+            {
+                WPS_Log.Warning("WPS_LogStorageFilterNotFound".Translate(building.def.defName));
                 return false;
+            }
 
             try
             {
@@ -323,6 +329,7 @@ namespace WardrobePolicySync
             {
             }
 
+            WPS_Log.Message("WPS_LogPolicyAppliedToRack".Translate(data.selectedPolicyLabel ?? "Unknown", building.def.defName));
             return true;
         }
 

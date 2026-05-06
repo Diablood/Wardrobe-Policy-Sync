@@ -10,7 +10,7 @@ namespace WardrobePolicySync
         {
             Harmony harmony = new Harmony("diablood.wardrobepolicysync");
             harmony.PatchAll();
-            Log.Message("[WardrobePolicySync] Harmony initialisé.");
+            WPS_Log.Message("WPS_LogLoaded".Translate());
         }
     }
 }
