@@ -10,14 +10,9 @@ namespace WardrobePolicySync
     [StaticConstructorOnStartup]
     public static class WPS_Icons
     {
-        public static readonly Texture2D Apply =
-            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ApplyPolicy");
-
-        public static readonly Texture2D Clear =
-            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ClearPolicy");
-
-        public static readonly Texture2D Reapply =
-            ContentFinder<Texture2D>.Get("UI/Commands/WPS_ReapplyPolicy");
+        public static readonly Texture2D Apply = ContentFinder<Texture2D>.Get("UI/Commands/WPS_ApplyPolicy");
+        public static readonly Texture2D Clear = ContentFinder<Texture2D>.Get("UI/Commands/WPS_ClearPolicy");
+        public static readonly Texture2D Reapply = ContentFinder<Texture2D>.Get("UI/Commands/WPS_ReapplyPolicy");
     }
 
     [HarmonyPatch(typeof(Building), "GetGizmos")]
@@ -25,27 +20,31 @@ namespace WardrobePolicySync
     {
         private static Dictionary<Thing, WardrobePolicyData> dataStore = new Dictionary<Thing, WardrobePolicyData>();
 
-        private static WardrobePolicyData GetData(Thing t)
+        private static WardrobePolicyData GetData(Thing thing)
         {
-            WardrobePolicyData data;
-            if (!dataStore.TryGetValue(t, out data))
+            if (!dataStore.TryGetValue(thing, out WardrobePolicyData data))
             {
                 data = new WardrobePolicyData();
-                dataStore[t] = data;
+                dataStore[thing] = data;
             }
 
+            NormalizeData(data);
             return data;
         }
 
         public static IEnumerable<Gizmo> Postfix(IEnumerable<Gizmo> __result, Building __instance)
         {
-            foreach (var g in __result)
-                yield return g;
+            foreach (Gizmo gizmo in __result)
+            {
+                yield return gizmo;
+            }
 
             if (!IsTargetRack(__instance))
+            {
                 yield break;
+            }
 
-            var data = GetData(__instance);
+            WardrobePolicyData data = GetData(__instance);
 
             yield return new Command_Action
             {
@@ -58,7 +57,7 @@ namespace WardrobePolicySync
                 }
             };
 
-            if (!string.IsNullOrEmpty(data.selectedPolicyLabel))
+            if (HasActiveWpsPolicy(data))
             {
                 yield return new Command_Action
                 {
@@ -67,13 +66,11 @@ namespace WardrobePolicySync
                     icon = WPS_Icons.Clear,
                     action = delegate
                     {
-                        data.selectedPolicyLabel = null;
-                        data.allowedApparelDefNames.Clear();
-                        data.allowedSpecialFilterDefNames.Clear();
-                        data.qualityRange = QualityRange.All;
-                        data.hpRange = new FloatRange(0f, 1f);
+                        ClearPolicyData(data);
 
-                        TryApplyPolicyToRack(__instance, data);
+                        // After disabling WPS, put the stand back in a safe vanilla/manual state.
+                        // This repairs stands from older saves where an empty WPS filter was already applied.
+                        TryRestoreRackToSafeManualState(__instance);
 
                         Messages.Message(
                             "WPS_PolicyCleared".Translate(),
@@ -93,7 +90,9 @@ namespace WardrobePolicySync
                         bool applied = false;
 
                         if (refreshed)
+                        {
                             applied = TryApplyPolicyToRack(__instance, data);
+                        }
 
                         if (refreshed && applied)
                         {
@@ -117,14 +116,15 @@ namespace WardrobePolicySync
         private static bool IsTargetRack(Building building)
         {
             return building != null &&
+                   building.def != null &&
                    (building.def.defName == "Building_OutfitStand" ||
                     building.def.defName == "Building_KidOutfitStand");
         }
 
         private static void OpenPolicyMenu(Building building)
         {
-            var options = new List<FloatMenuOption>();
-            var policies = Current.Game?.outfitDatabase?.AllOutfits;
+            List<FloatMenuOption> options = new List<FloatMenuOption>();
+            List<ApparelPolicy> policies = Current.Game?.outfitDatabase?.AllOutfits;
 
             if (policies == null)
             {
@@ -132,22 +132,24 @@ namespace WardrobePolicySync
                 return;
             }
 
-            foreach (var policy in policies)
+            foreach (ApparelPolicy policy in policies)
             {
-                var localPolicy = policy;
+                ApparelPolicy localPolicy = policy;
 
                 options.Add(new FloatMenuOption(localPolicy.label, delegate
                 {
-                    var data = GetData(building);
+                    WardrobePolicyData data = GetData(building);
+                    data.isWpsManaged = true;
                     data.selectedPolicyLabel = localPolicy.label;
 
-                    QualityRange q;
-                    FloatRange hp;
+                    QualityRange qualityRange;
+                    FloatRange hitPointsRange;
 
-                    data.allowedApparelDefNames = ExtractAllowedApparel(localPolicy, out q, out hp);
+                    data.allowedApparelDefNames = ExtractAllowedApparel(localPolicy, out qualityRange, out hitPointsRange);
                     data.allowedSpecialFilterDefNames = ExtractAllowedSpecialFilters(localPolicy);
-                    data.qualityRange = q;
-                    data.hpRange = hp;
+                    data.qualityRange = qualityRange;
+                    data.hpRange = hitPointsRange;
+                    NormalizeData(data);
 
                     bool applied = TryApplyPolicyToRack(building, data);
 
@@ -171,25 +173,32 @@ namespace WardrobePolicySync
             Find.WindowStack.Add(new FloatMenu(options));
         }
 
-        private static List<string> ExtractAllowedApparel(ApparelPolicy policy, out QualityRange qualityRange, out FloatRange hpRange)
+        private static List<string> ExtractAllowedApparel(
+            ApparelPolicy policy,
+            out QualityRange qualityRange,
+            out FloatRange hitPointsRange
+        )
         {
             List<string> result = new List<string>();
-
             qualityRange = QualityRange.All;
-            hpRange = new FloatRange(0f, 1f);
+            hitPointsRange = new FloatRange(0f, 1f);
 
             if (policy == null || policy.filter == null)
+            {
                 return result;
+            }
 
             qualityRange = policy.filter.AllowedQualityLevels;
-            hpRange = policy.filter.AllowedHitPointsPercents;
+            hitPointsRange = policy.filter.AllowedHitPointsPercents;
 
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
             {
                 if (!def.IsApparel)
+                {
                     continue;
+                }
 
-                bool allowed = false;
+                bool allowed;
 
                 try
                 {
@@ -201,7 +210,9 @@ namespace WardrobePolicySync
                 }
 
                 if (allowed)
+                {
                     result.Add(def.defName);
+                }
             }
 
             return result;
@@ -212,11 +223,13 @@ namespace WardrobePolicySync
             List<string> result = new List<string>();
 
             if (policy == null || policy.filter == null)
+            {
                 return result;
+            }
 
             foreach (SpecialThingFilterDef specialDef in DefDatabase<SpecialThingFilterDef>.AllDefsListForReading)
             {
-                bool allowed = false;
+                bool allowed;
 
                 try
                 {
@@ -228,7 +241,9 @@ namespace WardrobePolicySync
                 }
 
                 if (allowed)
+                {
                     result.Add(specialDef.defName);
+                }
             }
 
             return result;
@@ -236,16 +251,23 @@ namespace WardrobePolicySync
 
         private static bool RefreshDataFromPolicyLabel(WardrobePolicyData data)
         {
-            if (data == null || string.IsNullOrEmpty(data.selectedPolicyLabel))
-                return false;
+            NormalizeData(data);
 
-            var policies = Current.Game?.outfitDatabase?.AllOutfits;
-            if (policies == null)
+            if (!HasActiveWpsPolicy(data))
+            {
                 return false;
+            }
+
+            List<ApparelPolicy> policies = Current.Game?.outfitDatabase?.AllOutfits;
+
+            if (policies == null)
+            {
+                return false;
+            }
 
             ApparelPolicy matchedPolicy = null;
 
-            foreach (var policy in policies)
+            foreach (ApparelPolicy policy in policies)
             {
                 if (policy.label == data.selectedPolicyLabel)
                 {
@@ -260,23 +282,38 @@ namespace WardrobePolicySync
                 return false;
             }
 
-            QualityRange q;
-            FloatRange hp;
+            QualityRange qualityRange;
+            FloatRange hitPointsRange;
 
-            data.allowedApparelDefNames = ExtractAllowedApparel(matchedPolicy, out q, out hp);
+            data.allowedApparelDefNames = ExtractAllowedApparel(matchedPolicy, out qualityRange, out hitPointsRange);
             data.allowedSpecialFilterDefNames = ExtractAllowedSpecialFilters(matchedPolicy);
-            data.qualityRange = q;
-            data.hpRange = hp;
+            data.qualityRange = qualityRange;
+            data.hpRange = hitPointsRange;
+            data.isWpsManaged = true;
 
+            NormalizeData(data);
             return true;
         }
 
         private static bool TryApplyPolicyToRack(Building building, WardrobePolicyData data)
         {
             if (building == null || data == null)
+            {
                 return false;
+            }
+
+            NormalizeData(data);
+
+            // Main safety rule: unmanaged stands are vanilla/manual stands.
+            // WPS must not touch their filter, otherwise pawns can reject the stand as a storage target.
+            if (!HasActiveWpsPolicy(data))
+            {
+                WPS_Log.Message("WPS_NoSelectedPolicy".Translate());
+                return false;
+            }
 
             ThingFilter filter = TryGetStorageFilter(building);
+
             if (filter == null)
             {
                 WPS_Log.Warning("WPS_LogStorageFilterNotFound".Translate(building.def.defName));
@@ -294,7 +331,9 @@ namespace WardrobePolicySync
             foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
             {
                 if (!def.IsApparel)
+                {
                     continue;
+                }
 
                 bool allow = data.allowedApparelDefNames.Contains(def.defName);
 
@@ -329,30 +368,168 @@ namespace WardrobePolicySync
             {
             }
 
-            WPS_Log.Message("WPS_LogPolicyAppliedToRack".Translate(data.selectedPolicyLabel ?? "Unknown", building.def.defName));
+            WPS_Log.Message(
+                "WPS_LogPolicyAppliedToRack".Translate(
+                    data.selectedPolicyLabel ?? "Unknown",
+                    building.def.defName
+                )
+            );
+
             return true;
+        }
+
+        private static bool TryRestoreRackToSafeManualState(Building building)
+        {
+            if (building == null)
+            {
+                return false;
+            }
+
+            StorageSettings currentSettings = TryGetStorageSettings(building);
+            StorageSettings defaultSettings = building.def?.building?.defaultStorageSettings;
+
+            if (currentSettings != null && defaultSettings != null)
+            {
+                try
+                {
+                    currentSettings.CopyFrom(defaultSettings);
+                    WPS_Log.Message("WPS: restored default storage settings for " + building.def.defName + ".");
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+
+            ThingFilter currentFilter = TryGetStorageFilter(building);
+            ThingFilter defaultFilter = defaultSettings?.filter;
+
+            if (currentFilter != null && defaultFilter != null)
+            {
+                try
+                {
+                    currentFilter.CopyAllowancesFrom(defaultFilter);
+                    currentFilter.AllowedQualityLevels = defaultFilter.AllowedQualityLevels;
+                    currentFilter.AllowedHitPointsPercents = defaultFilter.AllowedHitPointsPercents;
+                    WPS_Log.Message("WPS: restored default storage filter for " + building.def.defName + ".");
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+
+            // Last-resort repair for old saves with an empty poisoned filter.
+            // This is only called when the player explicitly clears/disables WPS on the stand.
+            if (currentFilter != null)
+            {
+                try
+                {
+                    currentFilter.SetDisallowAll(null);
+
+                    foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading)
+                    {
+                        if (def.IsApparel)
+                        {
+                            currentFilter.SetAllow(def, true);
+                        }
+                    }
+
+                    currentFilter.AllowedQualityLevels = QualityRange.All;
+                    currentFilter.AllowedHitPointsPercents = new FloatRange(0f, 1f);
+                    WPS_Log.Message("WPS: repaired outfit stand filter by allowing apparel.");
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+
+            WPS_Log.Warning("WPS: could not restore manual storage state for " + building.def.defName + ".");
+            return false;
+        }
+
+        private static StorageSettings TryGetStorageSettings(Building building)
+        {
+            if (building == null)
+            {
+                return null;
+            }
+
+            if (building is IStoreSettingsParent storeSettingsParent)
+            {
+                try
+                {
+                    StorageSettings settings = storeSettingsParent.GetStoreSettings();
+
+                    if (settings != null)
+                    {
+                        return settings;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            if (building is Building_Storage buildingStorage)
+            {
+                StorageSettings storeSettings = buildingStorage.GetStoreSettings();
+
+                if (storeSettings != null)
+                {
+                    return storeSettings;
+                }
+            }
+
+            object filterOrSettings = FindFilterOrStorageSettings(building);
+
+            if (filterOrSettings is StorageSettings directSettings)
+            {
+                return directSettings;
+            }
+
+            if (building.AllComps != null)
+            {
+                foreach (ThingComp comp in building.AllComps)
+                {
+                    filterOrSettings = FindFilterOrStorageSettings(comp);
+
+                    if (filterOrSettings is StorageSettings compSettings)
+                    {
+                        return compSettings;
+                    }
+                }
+            }
+
+            return null;
         }
 
         private static ThingFilter TryGetStorageFilter(Building building)
         {
             if (building == null)
-                return null;
-
-            if (building is Building_Storage buildingStorage)
             {
-                if (buildingStorage.GetStoreSettings() != null &&
-                    buildingStorage.GetStoreSettings().filter != null)
-                {
-                    return buildingStorage.GetStoreSettings().filter;
-                }
+                return null;
+            }
+
+            StorageSettings settings = TryGetStorageSettings(building);
+
+            if (settings?.filter != null)
+            {
+                return settings.filter;
             }
 
             object filterOrSettings = FindFilterOrStorageSettings(building);
-            if (filterOrSettings is ThingFilter directFilter)
-                return directFilter;
 
-            if (filterOrSettings is StorageSettings settings && settings.filter != null)
-                return settings.filter;
+            if (filterOrSettings is ThingFilter directFilter)
+            {
+                return directFilter;
+            }
+
+            if (filterOrSettings is StorageSettings directSettings && directSettings.filter != null)
+            {
+                return directSettings.filter;
+            }
 
             if (building.AllComps != null)
             {
@@ -361,10 +538,14 @@ namespace WardrobePolicySync
                     filterOrSettings = FindFilterOrStorageSettings(comp);
 
                     if (filterOrSettings is ThingFilter compFilter)
+                    {
                         return compFilter;
+                    }
 
                     if (filterOrSettings is StorageSettings compSettings && compSettings.filter != null)
+                    {
                         return compSettings.filter;
+                    }
                 }
             }
 
@@ -374,47 +555,63 @@ namespace WardrobePolicySync
         private static object FindFilterOrStorageSettings(object obj)
         {
             if (obj == null)
+            {
                 return null;
+            }
 
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-            var type = obj.GetType();
+            System.Type type = obj.GetType();
 
             foreach (FieldInfo field in type.GetFields(flags))
             {
                 if (typeof(StorageSettings).IsAssignableFrom(field.FieldType))
                 {
                     object value = field.GetValue(obj);
+
                     if (value != null)
+                    {
                         return value;
+                    }
                 }
 
                 if (typeof(ThingFilter).IsAssignableFrom(field.FieldType))
                 {
                     object value = field.GetValue(obj);
+
                     if (value != null)
+                    {
                         return value;
+                    }
                 }
             }
 
-            foreach (PropertyInfo prop in type.GetProperties(flags))
+            foreach (PropertyInfo property in type.GetProperties(flags))
             {
-                if (!prop.CanRead)
+                if (!property.CanRead || property.GetIndexParameters().Length > 0)
+                {
                     continue;
+                }
 
                 try
                 {
-                    if (typeof(StorageSettings).IsAssignableFrom(prop.PropertyType))
+                    if (typeof(StorageSettings).IsAssignableFrom(property.PropertyType))
                     {
-                        object value = prop.GetValue(obj, null);
+                        object value = property.GetValue(obj, null);
+
                         if (value != null)
+                        {
                             return value;
+                        }
                     }
 
-                    if (typeof(ThingFilter).IsAssignableFrom(prop.PropertyType))
+                    if (typeof(ThingFilter).IsAssignableFrom(property.PropertyType))
                     {
-                        object value = prop.GetValue(obj, null);
+                        object value = property.GetValue(obj, null);
+
                         if (value != null)
+                        {
                             return value;
+                        }
                     }
                 }
                 catch
@@ -424,6 +621,66 @@ namespace WardrobePolicySync
 
             return null;
         }
+
+        private static bool HasActiveWpsPolicy(WardrobePolicyData data)
+        {
+            return data != null && data.isWpsManaged && !string.IsNullOrEmpty(data.selectedPolicyLabel);
+        }
+
+        private static void ClearPolicyData(WardrobePolicyData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            data.ClearWpsPolicy();
+        }
+
+        private static void NormalizeData(WardrobePolicyData data)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            data.Normalize();
+        }
+
+        public static bool TryRefreshAndApply(Building building, WardrobePolicyData data)
+        {
+            if (!HasActiveWpsPolicy(data))
+            {
+                return false;
+            }
+
+            bool refreshed = RefreshDataFromPolicyLabel(data);
+
+            if (!refreshed)
+            {
+                return false;
+            }
+
+            return TryApplyPolicyToRack(building, data);
+        }
+
+        public static bool TryGetStoredData(Thing thing, out WardrobePolicyData data)
+        {
+            data = null;
+
+            if (dataStore == null || thing == null)
+            {
+                return false;
+            }
+
+            if (!dataStore.TryGetValue(thing, out data))
+            {
+                return false;
+            }
+
+            NormalizeData(data);
+            return true;
+        }
     }
 
     [HarmonyPatch(typeof(Thing), "GetInspectString")]
@@ -431,21 +688,20 @@ namespace WardrobePolicySync
     {
         public static void Postfix(Thing __instance, ref string __result)
         {
-            if (!(__instance is Building b) || !IsTargetRackStatic(b))
+            if (!(__instance is Building building) || !IsTargetRackStatic(building))
+            {
                 return;
+            }
 
-            var field = typeof(Patch_Building_GetGizmos)
-                .GetField("dataStore", BindingFlags.NonPublic | BindingFlags.Static);
-
-            var store = field.GetValue(null) as Dictionary<Thing, WardrobePolicyData>;
-            if (store == null)
-                return;
-
-            WardrobePolicyData data;
-            if (store.TryGetValue(b, out data) && !string.IsNullOrEmpty(data.selectedPolicyLabel))
+            if (Patch_Building_GetGizmos.TryGetStoredData(building, out WardrobePolicyData data) &&
+                data != null &&
+                data.isWpsManaged &&
+                !string.IsNullOrEmpty(data.selectedPolicyLabel))
             {
                 if (!string.IsNullOrEmpty(__result))
+                {
                     __result += "\n";
+                }
 
                 __result += "WPS_CurrentPolicy".Translate(data.selectedPolicyLabel);
             }
@@ -454,6 +710,7 @@ namespace WardrobePolicySync
         private static bool IsTargetRackStatic(Building building)
         {
             return building != null &&
+                   building.def != null &&
                    (building.def.defName == "Building_OutfitStand" ||
                     building.def.defName == "Building_KidOutfitStand");
         }
@@ -465,6 +722,7 @@ namespace WardrobePolicySync
         public static void Postfix(Thing __instance)
         {
             if (__instance is Building building &&
+                building.def != null &&
                 (building.def.defName == "Building_OutfitStand" ||
                  building.def.defName == "Building_KidOutfitStand"))
             {
@@ -479,6 +737,7 @@ namespace WardrobePolicySync
         public static void Postfix(Thing __instance)
         {
             if (__instance is Building building &&
+                building.def != null &&
                 (building.def.defName == "Building_OutfitStand" ||
                  building.def.defName == "Building_KidOutfitStand"))
             {
@@ -491,33 +750,41 @@ namespace WardrobePolicySync
     {
         public static void ExposeThingData(Thing thing)
         {
-            var field = typeof(Patch_Building_GetGizmos)
+            FieldInfo field = typeof(Patch_Building_GetGizmos)
                 .GetField("dataStore", BindingFlags.NonPublic | BindingFlags.Static);
 
-            var store = field.GetValue(null) as Dictionary<Thing, WardrobePolicyData>;
-            if (store == null)
-                return;
+            Dictionary<Thing, WardrobePolicyData> store =
+                field?.GetValue(null) as Dictionary<Thing, WardrobePolicyData>;
 
-            WardrobePolicyData data;
-            if (!store.TryGetValue(thing, out data))
+            if (store == null || thing == null)
+            {
+                return;
+            }
+
+            if (!store.TryGetValue(thing, out WardrobePolicyData data))
             {
                 data = new WardrobePolicyData();
                 store[thing] = data;
             }
 
-            Scribe_Values.Look(ref data.selectedPolicyLabel, "wps_selectedPolicyLabel");
+            data.Normalize();
 
+            bool wasManagedBeforeLoad = data.isWpsManaged || !string.IsNullOrEmpty(data.selectedPolicyLabel);
+
+            Scribe_Values.Look(ref data.isWpsManaged, "wps_isWpsManaged", wasManagedBeforeLoad);
+            Scribe_Values.Look(ref data.selectedPolicyLabel, "wps_selectedPolicyLabel");
             Scribe_Collections.Look(ref data.allowedApparelDefNames, "wps_allowedApparelDefNames", LookMode.Value);
             Scribe_Collections.Look(ref data.allowedSpecialFilterDefNames, "wps_allowedSpecialFilterDefNames", LookMode.Value);
+            Scribe_Values.Look(ref data.qualityRange, "wps_qualityRange", QualityRange.All);
+            Scribe_Values.Look(ref data.hpRange, "wps_hpRange", new FloatRange(0f, 1f));
 
-            Scribe_Values.Look(ref data.qualityRange, "wps_qualityRange");
-            Scribe_Values.Look(ref data.hpRange, "wps_hpRange");
+            data.Normalize();
 
-            if (data.allowedApparelDefNames == null)
-                data.allowedApparelDefNames = new List<string>();
-
-            if (data.allowedSpecialFilterDefNames == null)
-                data.allowedSpecialFilterDefNames = new List<string>();
+            // Backward compatibility for saves made before wps_isWpsManaged existed.
+            if (Scribe.mode == LoadSaveMode.PostLoadInit && !string.IsNullOrEmpty(data.selectedPolicyLabel))
+            {
+                data.isWpsManaged = true;
+            }
         }
     }
 
@@ -525,36 +792,23 @@ namespace WardrobePolicySync
     {
         public static void TryAutoSync(Building building)
         {
-            var flags = BindingFlags.NonPublic | BindingFlags.Static;
-
-            var field = typeof(Patch_Building_GetGizmos).GetField("dataStore", flags);
-            var store = field.GetValue(null) as Dictionary<Thing, WardrobePolicyData>;
-            if (store == null)
+            if (building == null)
+            {
                 return;
+            }
 
-            WardrobePolicyData data;
-            if (!store.TryGetValue(building, out data))
+            if (!Patch_Building_GetGizmos.TryGetStoredData(building, out WardrobePolicyData data))
+            {
                 return;
+            }
 
-            if (string.IsNullOrEmpty(data.selectedPolicyLabel))
+            // Critical: a stand configured manually/vanilla must never be resynced by WPS.
+            if (data == null || !data.isWpsManaged || string.IsNullOrEmpty(data.selectedPolicyLabel))
+            {
                 return;
+            }
 
-            var refreshMethod = typeof(Patch_Building_GetGizmos)
-                .GetMethod("RefreshDataFromPolicyLabel", flags);
-
-            var applyMethod = typeof(Patch_Building_GetGizmos)
-                .GetMethod("TryApplyPolicyToRack", flags);
-
-            if (refreshMethod == null || applyMethod == null)
-                return;
-
-            object refreshResult = refreshMethod.Invoke(null, new object[] { data });
-            bool refreshed = refreshResult is bool b && b;
-
-            if (!refreshed)
-                return;
-
-            applyMethod.Invoke(null, new object[] { building, data });
+            Patch_Building_GetGizmos.TryRefreshAndApply(building, data);
         }
     }
 }

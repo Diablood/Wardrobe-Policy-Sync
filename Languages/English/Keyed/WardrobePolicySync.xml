@@ -15,5 +15,6 @@
     <WPS_PolicyReapplied>Policy reapplied: {0}</WPS_PolicyReapplied>
     <WPS_PolicyStoredButNotApplied>Policy stored but could not be applied to the wardrobe filter: {0}</WPS_PolicyStoredButNotApplied>
     <WPS_NoPolicies>No apparel policies available.</WPS_NoPolicies>
+    <WPS_NoSelectedPolicy>WPS: no selected policy for rack, skipping filter application.</WPS_NoSelectedPolicy>
     <WPS_CurrentPolicy>Policy: {0}</WPS_CurrentPolicy>
 </LanguageData>

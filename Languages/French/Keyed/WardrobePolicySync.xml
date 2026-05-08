@@ -15,5 +15,6 @@
     <WPS_PolicyReapplied>Règle réappliquée : {0}</WPS_PolicyReapplied>
     <WPS_PolicyStoredButNotApplied>Règle mémorisée mais impossible à appliquer au filtre du porte-vêtement : {0}</WPS_PolicyStoredButNotApplied>
     <WPS_NoPolicies>Aucune règle vestimentaire disponible.</WPS_NoPolicies>
+    <WPS_NoSelectedPolicy>WPS : aucune stratégie sélectionnée pour le rack, on passe l'application du filtre.</WPS_NoSelectedPolicy>
     <WPS_CurrentPolicy>Règle : {0}</WPS_CurrentPolicy>
 </LanguageData>
