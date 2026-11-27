@@ -1,6 +1,7 @@
 param(
     [string]$RimWorldDir = 'D:/SteamLibrary/steamapps/common/RimWorld',
-    [string]$HarmonyPath = ''
+    [string]$HarmonyPath = '',
+    [switch]$NoBuild
 )
 
 $ErrorActionPreference = 'Stop'
@@ -10,8 +11,10 @@ $project.Load((Join-Path $root 'Source/WardrobePolicySync/WardrobePolicySync.csp
 $version = $project.SelectSingleNode('/Project/PropertyGroup/Version').InnerText
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version' }
 
-& (Join-Path $root 'build.cmd') $RimWorldDir $HarmonyPath
-if ($LASTEXITCODE -ne 0) { throw 'Release build failed' }
+if (-not $NoBuild) {
+    & (Join-Path $root 'build.cmd') $RimWorldDir $HarmonyPath
+    if ($LASTEXITCODE -ne 0) { throw 'Release build failed' }
+}
 & (Join-Path $PSScriptRoot 'check-consistency.ps1') -RimWorldDir $RimWorldDir
 $original = & git -C $root rev-parse '1.0.0:Assemblies/WardrobePolicySync.dll'
 if ($LASTEXITCODE -ne 0) { throw 'Cannot read baseline 1.0.0 binary identity' }

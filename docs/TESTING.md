@@ -103,6 +103,24 @@ Aucune nouvelle copie nécessaire et aucun envoi Workshop effectué :
 l'utilisateur publiera cette copie depuis le jeu.
 Lien et empreinte du paquet consignés dans `RELEASING.md`.
 
+## Correctif de l'aperçu Workshop
+
+Le 27 novembre 2026, l'utilisateur rapporte « limit exceed » lors de l'envoi
+Workshop. Aperçu initial de 1 819 921 octets, cause plausible mais pas
+confirmée par un journal d'envoi. Image réduite à 960 × 640 et 971 059 octets,
+inspectée visuellement, original conservé hors des fichiers runtime.
+Contrôle bloquant sous 1 000 000 octets ajouté au script de cohérence.
+Les deux skills RimWorld installés ont aussi reçu les consignes de taille,
+de lisibilité et de vérification des copies déployées et empaquetées.
+
+Après fermeture du jeu confirmée par l'utilisateur, seul `About/Preview.png`
+a été remplacé dans Mods ; SHA-256 vérifié contre le dépôt. Les DLL validées
+ont été conservées à l'identique et le ZIP a été reconditionné avec `-NoBuild` :
+16 fichiers vérifiés, contrôles de cohérence réussis. Release GitHub 1.1.0
+actualisée sans déplacer le tag. Nouvel essai Workshop à confirmer par
+l'utilisateur ; en cas de persistance, relever l'erreur exacte et vérifier
+le quota Steam Cloud.
+
 ## Tests en jeu obligatoires
 
 1. Démarrer en 1.7 avec Harmony, Odyssey et WPS. Avec Biotech, sans HAR,

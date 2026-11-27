@@ -5,6 +5,12 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 
+# Keep a conservative margin under Steam's 1 MB preview limit.
+$preview = Get-Item -LiteralPath (Join-Path $root 'About/Preview.png')
+if ($preview.Length -ge 1000000) {
+    throw "Workshop preview must be under 1,000,000 bytes; got $($preview.Length)"
+}
+
 function Read-Xml([string]$path) {
     $document = New-Object System.Xml.XmlDocument
     $document.Load($path)
@@ -62,4 +68,4 @@ if (-not $defs.SelectSingleNode('Defs/ThingDef[defName="Building_KidOutfitStand"
     throw 'HAR patch changed the kid stand restriction'
 }
 
-Write-Output "OK: release $releaseVersion metadata; $($xmlFiles.Count) XML files; version folders; one DLL per version; $($englishKeys.Count) EN/FR keys and arguments; HAR XPath simulation."
+Write-Output "OK: release $releaseVersion metadata; Workshop preview $($preview.Length) bytes; $($xmlFiles.Count) XML files; version folders; one DLL per version; $($englishKeys.Count) EN/FR keys and arguments; HAR XPath simulation."

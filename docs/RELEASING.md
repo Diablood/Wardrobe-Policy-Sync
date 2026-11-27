@@ -9,7 +9,14 @@ Branche `main` et tag annoté `1.1.0` poussés ; le tag désigne le commit
 ZIP et fichier SHA-256 joints, tailles et empreintes distantes vérifiées.
 
 SHA-256 du ZIP :
-`aae1a47e8ddf048a4feba084bab7f3ee39f1b14596da6a5b7837e2ab5c24a939`.
+`1a6aafdfda7be5f5eb485b217e0de2e65ad174832db8378225006d9e58c583a1`.
+
+Correctif de conditionnement du 27 novembre 2026 : aperçu réduit de
+1 819 921 à 971 059 octets (960 × 640), PNG contrôlé visuellement. Le ZIP
+et son empreinte ont été remplacés dans la release 1.1.0 ; le tag initial
+reste inchangé. Les DLL déjà validées sont conservées à l'identique.
+Le correctif de visuel et son contrôle de taille sont suivis sur `main`.
+Le nouvel essai Workshop par l'utilisateur reste à confirmer.
 
 La copie locale dans
 `D:/SteamLibrary/steamapps/common/RimWorld/Mods/Wardrobe-Policy-Sync`
@@ -35,6 +42,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./tools/package-release.
 ```
 
 Paramètres disponibles : `-RimWorldDir` et `-HarmonyPath`.
+Pour un correctif de ressources uniquement, `-NoBuild` permet de réutiliser
+les DLL déjà compilées et validées ; les contrôles et la vérification du ZIP
+restent exécutés. Ne pas utiliser cette option après une modification C#.
 Le script force une recompilation Release, exécute les contrôles de cohérence,
 vérifie le binaire 1.6 contre le tag `1.0.0`, puis crée :
 
@@ -45,6 +55,9 @@ Le ZIP contient un dossier `Wardrobe-Policy-Sync` avec les ressources runtime,
 README, changelog et un fichier de version. Chaque entrée est vérifiée par
 SHA-256 contre le contenu préparé. Sources, outils, PDB et dépendances de build
 ne sont pas inclus. L'identifiant Workshop `3709575150` est conservé.
+Le contrôle de cohérence refuse un aperçu de 1 000 000 octets ou plus,
+comme budget conservateur pour le Workshop. Vérifier le fichier effectivement
+déployé, puis sa copie dans le paquet ; la taille du ZIP n'est pas ce contrôle.
 
 Les résultats des contrôles et le retour utilisateur sont consignés dans
 `TESTING.md`. Aucune validation supplémentaire sous 1.6 n'est revendiquée.
