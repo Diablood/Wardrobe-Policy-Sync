@@ -368,6 +368,8 @@ namespace WardrobePolicySync
             {
             }
 
+            WPS_HarCompatibility.ApplyBodyFilter(building, filter);
+
             WPS_Log.Message(
                 "WPS_LogPolicyAppliedToRack".Translate(
                     data.selectedPolicyLabel ?? "Unknown",
@@ -393,6 +395,7 @@ namespace WardrobePolicySync
                 try
                 {
                     currentSettings.CopyFrom(defaultSettings);
+                    WPS_HarCompatibility.ApplyBodyFilter(building, currentSettings.filter);
                     WPS_Log.Message("WPS: restored default storage settings for " + building.def.defName + ".");
                     return true;
                 }
@@ -411,6 +414,7 @@ namespace WardrobePolicySync
                     currentFilter.CopyAllowancesFrom(defaultFilter);
                     currentFilter.AllowedQualityLevels = defaultFilter.AllowedQualityLevels;
                     currentFilter.AllowedHitPointsPercents = defaultFilter.AllowedHitPointsPercents;
+                    WPS_HarCompatibility.ApplyBodyFilter(building, currentFilter);
                     WPS_Log.Message("WPS: restored default storage filter for " + building.def.defName + ".");
                     return true;
                 }
@@ -437,6 +441,7 @@ namespace WardrobePolicySync
 
                     currentFilter.AllowedQualityLevels = QualityRange.All;
                     currentFilter.AllowedHitPointsPercents = new FloatRange(0f, 1f);
+                    WPS_HarCompatibility.ApplyBodyFilter(building, currentFilter);
                     WPS_Log.Message("WPS: repaired outfit stand filter by allowing apparel.");
                     return true;
                 }

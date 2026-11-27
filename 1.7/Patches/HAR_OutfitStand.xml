@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Patch>
+  <Operation Class="PatchOperationFindMod">
+    <mods><li>Humanoid Alien Races</li></mods>
+    <match Class="PatchOperationRemove">
+      <xpath>Defs/ThingDef[defName="Building_OutfitStand"]/building/fixedStorageSettings/filter/specialFiltersToDisallow/li[text()="AllowChildOnlyApparel"]</xpath>
+    </match>
+  </Operation>
+</Patch>

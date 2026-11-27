@@ -2,11 +2,15 @@
 <ModMetaData>
     <name>Wardrobe Policy Sync</name>
     <author>Diablood</author>
+    <modVersion IgnoreIfNoMatchingField="True">1.1.0</modVersion>
     <supportedVersions>
         <li>1.6</li>
+        <li>1.7</li>
     </supportedVersions>
     <packageId>diablood.wardrobepolicysync</packageId>
     <description>
+        Version 1.1.0 — RimWorld 1.6 and 1.7.
+
         Quickly apply an existing apparel policy to an outfit stand, including allowed apparel, quality, and durability settings.
 
         Supports both adult and kid outfit stands.
@@ -17,6 +21,7 @@
 		<li>brrainz.harmony</li>
 		<li>Ludeon.RimWorld</li>
 		<li>Ludeon.RimWorld.Odyssey</li>
+        <li>erdelf.HumanoidAlienRaces</li>
 	</loadAfter>
     <modDependencies>
         <li>

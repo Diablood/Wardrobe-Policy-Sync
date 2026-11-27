@@ -9,7 +9,7 @@ namespace WardrobePolicySync
         static ModStartup()
         {
             Harmony harmony = new Harmony("diablood.wardrobepolicysync");
-            harmony.PatchAll();
+            harmony.PatchAll(typeof(ModStartup).Assembly);
             WPS_Log.Message("WPS_LogLoaded".Translate());
         }
     }
