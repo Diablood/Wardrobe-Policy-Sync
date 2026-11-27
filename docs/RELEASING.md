@@ -1,6 +1,21 @@
 # Publication de Wardrobe Policy Sync
 
-## Version préparée : 1.1.0
+## Version publiée sur GitHub : 1.1.0
+
+Publication effectuée le 27 novembre 2026 :
+[release 1.1.0](https://github.com/Diablood/Wardrobe-Policy-Sync/releases/tag/1.1.0).
+Branche `main` et tag annoté `1.1.0` poussés ; le tag désigne le commit
+`185f1940ceca86c4f43a1788a04c60b9043c655b`.
+ZIP et fichier SHA-256 joints, tailles et empreintes distantes vérifiées.
+
+SHA-256 du ZIP :
+`aae1a47e8ddf048a4feba084bab7f3ee39f1b14596da6a5b7837e2ab5c24a939`.
+
+La copie locale dans
+`D:/SteamLibrary/steamapps/common/RimWorld/Mods/Wardrobe-Policy-Sync`
+est prête pour l'envoi Workshop par l'utilisateur : 13 fichiers runtime
+identiques au paquet publié, version 1.1.0, identifiant `3709575150` conservé.
+Aucun envoi Workshop effectué par l'assistant.
 
 La version du projet C# est la référence pour le numéro de version.
 Le tag suit le format existant : `1.1.0`, sans préfixe `v`.

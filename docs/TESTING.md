@@ -90,6 +90,19 @@ La copie locale dans Mods a aussi été actualisée en 1.1.0, jeu fermé,
 avec 13 fichiers vérifiés. La version de test précédente est conservée dans
 `D:/SteamLibrary/steamapps/common/RimWorld/WPS-test-backups/20261127-151703-067310cf`.
 
+## Publication GitHub et copie Workshop prête
+
+Le 27 novembre 2026, sur demande explicite : branche `main` et tag `1.1.0`
+poussés, références distantes vérifiées sur le commit de version `185f194`.
+Release GitHub 1.1.0 publiée avec le ZIP et son fichier SHA-256 ; tailles,
+état des fichiers et empreintes SHA-256 retournées par GitHub vérifiés.
+La copie locale existante dans Mods a été comparée au ZIP publié :
+13 fichiers runtime identiques, `modVersion=1.1.0`, packageId inchangé,
+identifiant Workshop `3709575150` confirmé, aucun fichier parasite.
+Aucune nouvelle copie nécessaire et aucun envoi Workshop effectué :
+l'utilisateur publiera cette copie depuis le jeu.
+Lien et empreinte du paquet consignés dans `RELEASING.md`.
+
 ## Tests en jeu obligatoires
 
 1. Démarrer en 1.7 avec Harmony, Odyssey et WPS. Avec Biotech, sans HAR,
